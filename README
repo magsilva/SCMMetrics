@@ -1,0 +1,12 @@
+To generenate the graphics:
+
+set term postscript eps monochrome solid
+set output "wikire-branch-nosafe.eps"
+plot "wikire-branch-nosafe-stats.dat" with lines
+set output "wikire-branch-nosafe-smooth.eps"
+plot "wikire-branch-nosafe-stats.dat" smooth bezier with lines
+set output "wikire-trunk.eps"
+plot "wikire-trunk-stats.dat" with lines
+set output "wikire-trunk-smooth.eps"
+plot "wikire-trunk-stats.dat" smooth bezier with lines
+
