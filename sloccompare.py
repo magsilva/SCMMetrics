@@ -30,6 +30,7 @@
 import os
 import re
 import svn
+import svn.core
 import sys
 import tempfile
 
@@ -43,13 +44,13 @@ def removeDir(topDir):
 			os.rmdir(os.path.join(root, name))
 
 
-def build_re_list(self, expressions_list):
+def build_re_list(expressions_list):
 	re_list = []
 	for expression in expressions_list:
 		re_list.append(re.compile(expression))
 	return re_list
 
-def string_matches_re_list(self, string, re_list):
+def string_matches_re_list(string, re_list):
 	for expression in re_list:
 		if expression.match(string):
 			return True
@@ -68,7 +69,7 @@ class SubversionRepository(Repository):
 	DEFAULT_END_REVISION = "HEAD"
 
 	def __init__(self, url):
-		assert(core.SVN_VER_MAJOR, core.SVN_VER_MINOR) >= (1, 3), "Subversion 1.3 or later required"
+		assert(svn.core.SVN_VER_MAJOR, svn.core.SVN_VER_MINOR) >= (1, 3), "Subversion 1.3 or later required"
 		self.url = url
 	
 
@@ -113,9 +114,9 @@ class SubversionRepository(Repository):
 
 	def getRevisionRange(self, startRevision, endRevision):
 		if type(startRevision) == str:
-			startRevision = convertRevisionStringToInt(startRevision)
+			startRevision = self.convertRevisionStringToInt(startRevision)
 		if type(endRevision) == str:
-			endRevision = convertRevisionStringToInt(endRevision)
+			endRevision = self.convertRevisionStringToInt(endRevision)
 		return range(startRevision, endRevision)
 
 
@@ -125,7 +126,7 @@ class MetricsCollector(object):
 	def __init__(self, project, workDir = None, startRevision = None, endRevision = None):
 		self.project = project
 		if workDir == None:
-			self.workDir = tempfile.mkstemp()
+			self.workDir = tempfile.mkdtemp()
 		else:
 			self.workDir = workDir
 
@@ -139,7 +140,7 @@ class MetricsCollector(object):
 		else:
 			self.endRevision = endRevision
 
-		self.ignoreDirs = build_re_list(project.tagXfiles["VendorCode"])
+		self.ignoreDirs = build_re_list(project.getFilesTaggedAs("VendorCode"))
 
 
 	def extract_revision_data(self, revision):
@@ -183,7 +184,7 @@ class MetricsCollector(object):
 	def collectData(self):
 		locHistory = {}
 
-		for revision in project.repository.getRevisionRange(self.startRevision, self.endRevision):
+		for revision in self.project.repository.getRevisionRange(self.startRevision, self.endRevision):
 			print "\nRevision %s" % revision
 			locHistory[revision] = self.collectDataFromRevision(revision)
 
@@ -193,7 +194,7 @@ class MetricsCollector(object):
 	def run(self):
 		print "Compiling data for project %s, from version %s to %s" % (self.project.name, self.startRevision, self.endRevision)
 		print "Directories to be ignored: ",
-		for i in self.project.tagXfile["VendorCode"]:
+		for i in self.project.getFilesTaggedAs("VendorCode"):
 			print i,
 		print ""
 
@@ -202,7 +203,7 @@ class MetricsCollector(object):
 
 		# Compile data to build the graph (Gnuplot)
 		outputFile = os.path.join(self.workDir, "%s-stats.dat" % self.project.name)
-		gnuplotData = file(output_file, "w+")
+		gnuplotData = file(outputFile, "w+")
 		print "Overall results:"
 		for revision in locHistory.keys():
 			stats = 0
@@ -223,7 +224,7 @@ class Project(object):
 
 
 	def setRepository(self, repository):
-		self.repository(repository)
+		self.repository = repository
 
 
 	def tag(self, file, tag ):
@@ -248,10 +249,24 @@ class Project(object):
 			del(self.fileXtag[file])
 
 
+	def getTagsForFile(self, file):
+		if self.fileXtag.has_key(file):
+			return self.fileXtag[file]
+		else:
+			return []
+
+
+	def getFilesTaggedAs(self, tag):
+		if self.tagXfile.has_key(tag):
+			return self.tagXfile[tag]
+		else:
+			return []
+
+
 	def collectMetrics(self):
 		metrics = MetricsCollector(self)
 		metrics.run()
-		print "\n\nData is available at %" % (metrics.workDir)
+		print "\n\nData is available at %s" % (metrics.workDir)
 
 
 
