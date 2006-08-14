@@ -111,3 +111,36 @@ def main():
 
 if __name__ == '__main__':
 	main()
+
+import sys, os
+from svn import core, util, _util, _client
+
+assert(core.SVN_VER_MAJOR, core.SVN_VER_MINOR) >= (1, 3), "Subversion 1.3 or later required"
+
+def usage():
+	print "Usage: " + sys.argv[0] + " URL PATH\n"
+	sys.exit(0)
+
+clas SVNWorkcopy(object):
+
+	def checkout(self, url, path):
+		# Initialize APR and get a POOL.
+		_util.apr_initialize()
+		pool = util.svn_pool_create(None)
+
+		# Checkout the HEAD of URL into PATH (silently)
+		_client.svn_client_checkout(None, None, url, path, -1, 1, None, pool)
+
+		# Cleanup our POOL, and shut down APR.
+		util.svn_pool_destroy(pool)
+		_util.apr_terminate()
+
+
+i=0
+while [ $i != 350 ]
+do
+	os.makedirs($i)
+	svn checkout -r $i http://www.magsilva.dynalias.net/svn/wikire/trunk $i
+	sloccount --duplicates --autogen --addlangall . > stats-trunk.$i
+	rm -rf $i
+done
