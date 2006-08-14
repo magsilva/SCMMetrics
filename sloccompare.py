@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#
+# -*- coding: latin-1 -*-
 #
 # SCMMetrics
 # A tool to collect metrics from projects hosted on Subversion repositories.
@@ -31,18 +31,16 @@ import os
 import re
 import svn
 import sys
-impor tempfile
+import tempfile
 
-def removeDir(topDir)
-"""
-Delete everything reachable from the directory named in 'top',
-assuming there are no symbolic links.
-"""
+def removeDir(topDir):
+	"""Delete everything reachable from the directory named in 'top',
+	assuming there are no symbolic links."""
 	for root, dirs, files in os.walk(topDir, topdown=False):
 		for name in files:
-			# os.remove(os.path.join(root, name))
+			os.remove(os.path.join(root, name))
 		for name in dirs:
-			# os.rmdir(os.path.join(root, name))
+			os.rmdir(os.path.join(root, name))
 
 
 def build_re_list(self, expressions_list):
@@ -124,19 +122,19 @@ class SubversionRepository(Repository):
 
 class MetricsCollector(object):
 
-	def __init__(self, project, workDir = null, startRevision = null, endRevision = null):
+	def __init__(self, project, workDir = None, startRevision = None, endRevision = None):
 		self.project = project
-		if workDir == null:
+		if workDir == None:
 			self.workDir = tempfile.mkstemp()
 		else:
 			self.workDir = workDir
 
-		if startRevision == null:
+		if startRevision == None:
 			self.startRevision = project.repository.DEFAULT_START_REVISION
 		else:
 			self.startRevision = startRevision
 
-		if endRevision == null:
+		if endRevision == None:
 			self.endRevision = project.repository.DEFAULT_END_REVISION
 		else:
 			self.endRevision = endRevision
@@ -144,7 +142,7 @@ class MetricsCollector(object):
 		self.ignoreDirs = build_re_list(project.tagXfiles["VendorCode"])
 
 
-	def extract_revision_data(self, revision)
+	def extract_revision_data(self, revision):
 		destDir = os.path.join(self.workDir, revision)
 		project.repository.export(destDir, revision)
 		filename = os.path.join(self.workDir, "stats.%s" % revision)
@@ -250,7 +248,7 @@ class Project(object):
 			del(self.fileXtag[file])
 
 
-	def collectMetrics(self)
+	def collectMetrics(self):
 		metrics = MetricsCollector(self)
 		metrics.run()
 		print "\n\nData is available at %" % (metrics.workDir)
